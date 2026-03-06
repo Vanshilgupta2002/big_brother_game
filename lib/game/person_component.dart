@@ -11,6 +11,9 @@ class PersonComponent extends CircleComponent
   double lifeTime = 1.5;
   bool wasTapped = false;
 
+  double blinkTimer = 0;
+  bool showEye = true;
+
   PersonComponent({required this.isRebel})
       : super(
     radius: 25,
@@ -18,11 +21,18 @@ class PersonComponent extends CircleComponent
     paint: Paint()
       ..color = isRebel ? Colors.red : Colors.green,
   );
-
   @override
   void update(double dt) {
     super.update(dt);
 
+    // 👁 Blink logic
+    blinkTimer += dt;
+    if (blinkTimer >= 0.3) {
+      blinkTimer = 0;
+      showEye = !showEye;
+    }
+
+    // ⏳ Lifetime logic
     lifeTime -= dt;
 
     if (lifeTime <= 0) {
@@ -52,4 +62,22 @@ class PersonComponent extends CircleComponent
       gameRef.loseLife();
     }
   }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    if (isRebel && showEye) {
+      final eyePaint = Paint()..color = Colors.white;
+
+      canvas.drawCircle(
+        Offset(0, 0),
+        6,
+        eyePaint,
+      );
+    }
+  }
+
+
 }
+

@@ -1,5 +1,7 @@
 import 'package:big_brother_game/game/hud_component.dart';
+import 'package:big_brother_game/game/intro_component.dart';
 import 'package:flame/game.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/components.dart';
 import 'cctv_tile.dart';
@@ -22,15 +24,26 @@ class BigBrotherGame extends FlameGame {
   double spawnTimer = 0;
   double spawnInterval = 1.2;
 
-  @override
-  Color backgroundColor() => const Color(0xFF050A0A);
+  double flashTimer = 0;
 
   @override
+  Color backgroundColor() => const Color(0xFF050A0A);
+  @override
   Future<void> onLoad() async {
-    super.onLoad();
+    await FlameAudio.audioCache.loadAll([
+      'click.wav',
+
+    ]);
+
+    add(IntroComponent());
+  }
+
+
+  void startGame() {
     _createGrid();
     add(HudComponent(this));
   }
+
 
   void _createGrid() {
     final tileWidth = size.x / gridSize;
@@ -62,6 +75,10 @@ class BigBrotherGame extends FlameGame {
       spawnTimer = 0;
       _spawnRandomPerson();
     }
+
+    if (flashTimer > 0) {
+      flashTimer -= dt;
+    }
   }
 
   void _spawnRandomPerson() {
@@ -78,21 +95,24 @@ class BigBrotherGame extends FlameGame {
 
     score++;
 
-    // increase difficulty every 10 points
-    if (score % 10 == 0 && spawnInterval > 0.4) {
-      spawnInterval -= 0.1;
+    if (score % 8 == 0 && spawnInterval > 0.35) {
+      spawnInterval -= 0.08;
     }
+    print("Playing click sound");
+
+    FlameAudio.play('click.wav');
   }
   void loseLife() {
     if (isGameOver) return;
 
     lives--;
+    flashTimer = 0.2; // trigger flash
 
     if (lives <= 0) {
       isGameOver = true;
-      // pauseEngine();   // 👈 important
       add(GameOverComponent(this));
     }
+    FlameAudio.play('click.wav');
   }
   void resetGame() {
     for (final component in children.toList()) {
@@ -110,4 +130,32 @@ class BigBrotherGame extends FlameGame {
     _createGrid();
     add(HudComponent(this));
   }
-}
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    // 🔴 Flash effect when losing life
+    if (flashTimer > 0) {
+      final flashPaint = Paint()
+        ..color = Colors.red.withOpacity(0.3);
+
+      canvas.drawRect(size.toRect(), flashPaint);
+    }
+
+    // 🟢 CRT scanline effect
+    final scanPaint = Paint()
+      ..color = Colors.green.withOpacity(0.05);
+
+    for (double y = 0; y < size.y; y += 4) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.x, y),
+        scanPaint,
+      );
+    }
+  }
+
+
+  }
+
+

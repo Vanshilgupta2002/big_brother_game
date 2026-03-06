@@ -21,7 +21,7 @@ class HudComponent extends TextComponent {
   @override
   void update(double dt) {
     super.update(dt);
-
-    text = "SCORE: ${gameRef.score}   LIVES: ${gameRef.lives}";
+    text =
+    "THREATS ELIMINATED: ${gameRef.score}\nSYSTEM STABILITY: ${gameRef.lives}";
   }
 }
