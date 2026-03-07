@@ -1,14 +1,12 @@
 import 'package:big_brother_game/game/hud_component.dart';
 import 'package:big_brother_game/game/intro_component.dart';
 import 'package:flame/game.dart';
-import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/components.dart';
-import 'cctv_tile.dart';
 import 'dart:math';
-import 'person_component.dart';
 import 'cctv_tile.dart';
-
+import 'person_component.dart';
 import 'game_over_component.dart';
 
 class BigBrotherGame extends FlameGame {
@@ -26,24 +24,24 @@ class BigBrotherGame extends FlameGame {
 
   double flashTimer = 0;
 
+  AudioSource? clickSound;
+
   @override
   Color backgroundColor() => const Color(0xFF050A0A);
+
   @override
   Future<void> onLoad() async {
-    await FlameAudio.audioCache.loadAll([
-      'click.wav',
-
-    ]);
+    // ✅ Preload audio (important for Web)
+    await SoLoud.instance.init();
+    clickSound = await SoLoud.instance.loadAsset('assets/audio/click.mp3');
 
     add(IntroComponent());
   }
-
 
   void startGame() {
     _createGrid();
     add(HudComponent(this));
   }
-
 
   void _createGrid() {
     final tileWidth = size.x / gridSize;
@@ -61,7 +59,6 @@ class BigBrotherGame extends FlameGame {
       }
     }
   }
-
 
   @override
   void update(double dt) {
@@ -88,8 +85,6 @@ class BigBrotherGame extends FlameGame {
     tile.spawnPerson(random.nextBool());
   }
 
-
-
   void increaseScore() {
     if (isGameOver) return;
 
@@ -98,22 +93,31 @@ class BigBrotherGame extends FlameGame {
     if (score % 8 == 0 && spawnInterval > 0.35) {
       spawnInterval -= 0.08;
     }
-    print("Playing click sound");
 
-    FlameAudio.play('click.wav');
+    _playClickSound();
   }
+
   void loseLife() {
     if (isGameOver) return;
 
     lives--;
-    flashTimer = 0.2; // trigger flash
+    flashTimer = 0.2;
 
     if (lives <= 0) {
       isGameOver = true;
       add(GameOverComponent(this));
     }
-    FlameAudio.play('click.wav');
+
+    _playClickSound();
   }
+
+  void _playClickSound() {
+    // ✅ Works correctly with assets/audio/
+    if (clickSound != null) {
+      SoLoud.instance.play(clickSound!);
+    }
+  }
+
   void resetGame() {
     for (final component in children.toList()) {
       component.removeFromParent();
@@ -130,11 +134,11 @@ class BigBrotherGame extends FlameGame {
     _createGrid();
     add(HudComponent(this));
   }
+
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // 🔴 Flash effect when losing life
     if (flashTimer > 0) {
       final flashPaint = Paint()
         ..color = Colors.red.withOpacity(0.3);
@@ -142,7 +146,6 @@ class BigBrotherGame extends FlameGame {
       canvas.drawRect(size.toRect(), flashPaint);
     }
 
-    // 🟢 CRT scanline effect
     final scanPaint = Paint()
       ..color = Colors.green.withOpacity(0.05);
 
@@ -154,8 +157,4 @@ class BigBrotherGame extends FlameGame {
       );
     }
   }
-
-
-  }
-
-
+}
