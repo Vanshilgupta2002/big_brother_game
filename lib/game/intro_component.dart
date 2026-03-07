@@ -5,16 +5,16 @@ import 'package:flame/events.dart';
 
 
 class IntroComponent extends PositionComponent
-    with TapCallbacks, HasGameRef<BigBrotherGame> {
+    with TapCallbacks, HasGameReference<BigBrotherGame> {
 
   @override
   Future<void> onLoad() async {
-    size = gameRef.size;
+    size = game.size;
 
     final text = TextComponent(
       text: "BIG BROTHER v2.4\n\nSURVEILLANCE PROTOCOL ACTIVE\n\nIDENTIFY DISSIDENTS\nPROTECT SYSTEM STABILITY\n\nCLICK TO BEGIN",
       anchor: Anchor.center,
-      position: gameRef.size / 2,
+      position: game.size / 2,
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.greenAccent,
@@ -30,6 +30,6 @@ class IntroComponent extends PositionComponent
   @override
   void onTapDown(TapDownEvent event) {
     removeFromParent();
-    gameRef.startGame();
+    game.startGame();
   }
 }

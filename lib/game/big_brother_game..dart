@@ -83,6 +83,12 @@ class BigBrotherGame extends FlameGame {
 
     final tile = tiles[random.nextInt(tiles.length)];
     tile.spawnPerson(random.nextBool());
+
+    // 25% chance spawn second one
+    if (random.nextDouble() < 0.25) {
+      final secondTile = tiles[random.nextInt(tiles.length)];
+      secondTile.spawnPerson(random.nextBool());
+    }
   }
 
   void increaseScore() {
@@ -90,13 +96,12 @@ class BigBrotherGame extends FlameGame {
 
     score++;
 
-    if (score % 8 == 0 && spawnInterval > 0.35) {
+    if (score % 6 == 0 && spawnInterval > 0.3) {
       spawnInterval -= 0.08;
     }
 
     _playClickSound();
   }
-
   void loseLife() {
     if (isGameOver) return;
 

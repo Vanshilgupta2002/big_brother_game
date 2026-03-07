@@ -5,18 +5,19 @@ import 'package:flame/events.dart';
 
 
 class GameOverComponent extends PositionComponent
-    with TapCallbacks, HasGameRef<BigBrotherGame> {
-  final BigBrotherGame gameRef;
+    with TapCallbacks, HasGameReference<BigBrotherGame> {
+  @override
+  final BigBrotherGame game;
 
-  GameOverComponent(this.gameRef);
+  GameOverComponent(this.game);
   @override
   Future<void> onLoad() async {
-    size = gameRef.size;
+    size = game.size;
 
     final text = TextComponent(
-      text: "SYSTEM FAILURE\n\nSURVEILLANCE COLLAPSED\n\nFINAL REPORT: ${gameRef.score} THREATS ELIMINATED\n\nCLICK TO REINITIALIZE",
+      text: "SYSTEM FAILURE\n\nSURVEILLANCE COLLAPSED\n\nFINAL REPORT: ${game.score} THREATS ELIMINATED\n\nCLICK TO REINITIALIZE",
       anchor: Anchor.center,
-      position: gameRef.size / 2,
+      position: game.size / 2,
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.redAccent,
@@ -31,6 +32,6 @@ class GameOverComponent extends PositionComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    gameRef.resetGame();
+    game.resetGame();
   }
 }

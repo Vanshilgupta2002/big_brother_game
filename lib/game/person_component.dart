@@ -2,13 +2,12 @@ import 'package:big_brother_game/game/big_brother_game..dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/events.dart';
-
-
+import 'score_popup_component.dart';
 
 class PersonComponent extends CircleComponent
-    with TapCallbacks, HasGameRef<BigBrotherGame> {
+    with TapCallbacks, HasGameReference<BigBrotherGame> {
   final bool isRebel;
-  double lifeTime = 1.5;
+  late double lifeTime;
   bool wasTapped = false;
 
   double blinkTimer = 0;
@@ -21,6 +20,11 @@ class PersonComponent extends CircleComponent
     paint: Paint()
       ..color = isRebel ? Colors.red : Colors.green,
   );
+
+  @override
+  Future<void> onLoad() async {
+    lifeTime = 1.0 + (game.random.nextDouble() * 0.8);
+  }
   @override
   void update(double dt) {
     super.update(dt);
@@ -45,9 +49,14 @@ class PersonComponent extends CircleComponent
     wasTapped = true;
 
     if (isRebel) {
-      gameRef.increaseScore();
+      game.increaseScore();
+      game.add(ScorePopupComponent(position: absolutePosition.clone()));
     } else {
-      gameRef.loseLife();
+      game.loseLife();
+      game.add(ScorePopupComponent(
+        position: absolutePosition.clone(),
+        isPenalty: true,
+      ));
     }
 
     removeFromParent();
@@ -55,12 +64,13 @@ class PersonComponent extends CircleComponent
 
   @override
   void onRemove() {
-    super.onRemove();
-
-    // If rebel escaped (not tapped), lose life
+    // If rebel escaped (not tapped), lose life.
+    // We must do this before calling super.onRemove() because game reference is detached afterwards.
     if (isRebel && !wasTapped) {
-      gameRef.loseLife();
+      game.loseLife();
     }
+
+    super.onRemove();
   }
 
   @override
