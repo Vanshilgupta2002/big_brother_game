@@ -22,6 +22,9 @@ class HudComponent extends TextComponent {
   void update(double dt) {
     super.update(dt);
     text =
-    "THREATS ELIMINATED: ${gameRef.score}\nSYSTEM STABILITY: ${gameRef.lives}";
+        text = """
+THREATS REMAINING: ${gameRef.remainingThreats}
+SYSTEM STABILITY: ${gameRef.lives}
+""";
   }
 }

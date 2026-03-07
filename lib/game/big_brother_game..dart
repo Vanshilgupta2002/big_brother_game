@@ -8,6 +8,7 @@ import 'dart:math';
 import 'cctv_tile.dart';
 import 'person_component.dart';
 import 'game_over_component.dart';
+import 'victory_component.dart';
 
 class BigBrotherGame extends FlameGame {
   final int gridSize = 3;
@@ -17,6 +18,10 @@ class BigBrotherGame extends FlameGame {
 
   int score = 0;
   int lives = 3;
+
+  int remainingThreats = 40;
+
+
   bool isGameOver = false;
 
   double spawnTimer = 0;
@@ -25,6 +30,8 @@ class BigBrotherGame extends FlameGame {
   double flashTimer = 0;
 
   AudioSource? clickSound;
+
+
 
   @override
   Color backgroundColor() => const Color(0xFF050A0A);
@@ -77,24 +84,40 @@ class BigBrotherGame extends FlameGame {
       flashTimer -= dt;
     }
   }
-
   void _spawnRandomPerson() {
     if (tiles.isEmpty) return;
 
     final tile = tiles[random.nextInt(tiles.length)];
-    tile.spawnPerson(random.nextBool());
 
-    // 25% chance spawn second one
+    final bool isRebel = random.nextBool();
+
+    // 30% of non-rebels are suspicious
+    final bool isSuspicious =
+        !isRebel && random.nextDouble() < 0.3;
+
+    tile.spawnPerson(isRebel, isSuspicious);
+
+    // 25% chance double spawn
     if (random.nextDouble() < 0.25) {
       final secondTile = tiles[random.nextInt(tiles.length)];
-      secondTile.spawnPerson(random.nextBool());
+      final bool secondRebel = random.nextBool();
+      final bool secondSuspicious =
+          !secondRebel && random.nextDouble() < 0.3;
+
+      secondTile.spawnPerson(secondRebel, secondSuspicious);
     }
   }
-
   void increaseScore() {
     if (isGameOver) return;
 
     score++;
+    remainingThreats--;
+
+    if (remainingThreats <= 0) {
+      isGameOver = true;
+      add(VictoryComponent(this));
+      return;
+    }
 
     if (score % 6 == 0 && spawnInterval > 0.3) {
       spawnInterval -= 0.08;
@@ -102,6 +125,8 @@ class BigBrotherGame extends FlameGame {
 
     _playClickSound();
   }
+
+
   void loseLife() {
     if (isGameOver) return;
 
@@ -122,20 +147,23 @@ class BigBrotherGame extends FlameGame {
       SoLoud.instance.play(clickSound!);
     }
   }
-
   void resetGame() {
-    for (final component in children.toList()) {
-      component.removeFromParent();
-    }
-
-    tiles.clear();
-
+    // Reset state
+    remainingThreats = 40;
     score = 0;
     lives = 3;
     spawnInterval = 1.2;
     spawnTimer = 0;
     isGameOver = false;
 
+    // Remove all existing components
+    for (final component in children.toList()) {
+      component.removeFromParent();
+    }
+
+    tiles.clear();
+
+    // Rebuild game
     _createGrid();
     add(HudComponent(this));
   }

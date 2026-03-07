@@ -14,13 +14,20 @@ class CCTVTile extends PositionComponent {
     this.position = position;
     this.size = size;
   }
-
-  void spawnPerson(bool isRebel) {
+  void spawnPerson(bool isRebel, bool isSuspicious) {
     if (currentPerson != null) return;
 
-    currentPerson = PersonComponent(isRebel: isRebel);
+    currentPerson = PersonComponent(
+      isRebel: isRebel,
+      isSuspicious: isSuspicious,
+    );
+
     currentPerson!.position = size / 2;
     add(currentPerson!);
+
+    // currentPerson!.onRemove = () {
+    //   currentPerson = null;
+    // };
   }
   @override
   void update(double dt) {
