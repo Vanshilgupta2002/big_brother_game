@@ -149,7 +149,7 @@ class BigBrotherGame extends FlameGame {
   void _playClickSound() {
     // ✅ Works correctly with assets/audio/
     if (clickSound != null) {
-      SoLoud.instance.play(clickSound!);
+      SoLoud.instance.play(clickSound!).ignore();
     }
   }
   void resetGame() {
