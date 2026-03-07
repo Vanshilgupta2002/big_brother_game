@@ -1,5 +1,6 @@
 import 'package:big_brother_game/game/hud_component.dart';
 import 'package:big_brother_game/game/intro_component.dart';
+import 'package:big_brother_game/game/threat_progress_bar.dart';
 import 'package:flame/game.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class BigBrotherGame extends FlameGame {
   int lives = 3;
 
   int remainingThreats = 40;
+  final int maxThreats = 40;
 
 
   bool isGameOver = false;
@@ -30,6 +32,8 @@ class BigBrotherGame extends FlameGame {
   double flashTimer = 0;
 
   AudioSource? clickSound;
+
+
 
 
 
@@ -48,6 +52,7 @@ class BigBrotherGame extends FlameGame {
   void startGame() {
     _createGrid();
     add(HudComponent(this));
+    add(ThreatProgressBar());
   }
 
   void _createGrid() {
@@ -166,6 +171,7 @@ class BigBrotherGame extends FlameGame {
     // Rebuild game
     _createGrid();
     add(HudComponent(this));
+    add(ThreatProgressBar());
   }
 
   @override

@@ -8,7 +8,7 @@ class HudComponent extends TextComponent {
 
   HudComponent(this.gameRef)
       : super(
-    position: Vector2(10, 10),
+    position: Vector2(10, 40), // Shifted down to prevent overlap with ThreatProgressBar
     textRenderer: TextPaint(
       style: const TextStyle(
         color: Colors.greenAccent,
@@ -21,9 +21,9 @@ class HudComponent extends TextComponent {
   @override
   void update(double dt) {
     super.update(dt);
-    text =
-        text = """
+    text = """
 THREATS REMAINING: ${gameRef.remainingThreats}
+
 SYSTEM STABILITY: ${gameRef.lives}
 """;
   }
