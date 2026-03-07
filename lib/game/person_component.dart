@@ -65,6 +65,8 @@ class PersonComponent extends CircleComponent
 
   @override
   void onTapDown(TapDownEvent event) {
+    game.useAuthority();
+
     wasTapped = true;
 
     final impactPosition = absolutePosition.clone();

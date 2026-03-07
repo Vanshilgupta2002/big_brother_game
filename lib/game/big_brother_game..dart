@@ -11,7 +11,9 @@ import 'person_component.dart';
 import 'game_over_component.dart';
 import 'victory_component.dart';
 
-class BigBrotherGame extends FlameGame {
+import 'package:flame/events.dart';
+
+class BigBrotherGame extends FlameGame with TapCallbacks {
   final int gridSize = 3;
 
   final List<CCTVTile> tiles = [];
@@ -24,6 +26,10 @@ class BigBrotherGame extends FlameGame {
   final int maxThreats = 40;
 
 
+  final int maxAuthority = 50;
+  int remainingAuthority = 50;
+
+
   bool isGameOver = false;
 
   double spawnTimer = 0;
@@ -32,6 +38,8 @@ class BigBrotherGame extends FlameGame {
   double flashTimer = 0;
 
   AudioSource? clickSound;
+
+
 
 
 
@@ -154,7 +162,7 @@ class BigBrotherGame extends FlameGame {
   }
   void resetGame() {
     // Reset state
-    remainingThreats = 40;
+    remainingThreats = maxThreats;
     score = 0;
     lives = 3;
     spawnInterval = 1.2;
@@ -172,6 +180,7 @@ class BigBrotherGame extends FlameGame {
     _createGrid();
     add(HudComponent(this));
     add(ThreatProgressBar());
+    remainingAuthority = maxAuthority;
   }
 
   @override
@@ -195,5 +204,22 @@ class BigBrotherGame extends FlameGame {
         scanPaint,
       );
     }
+  }
+
+  void useAuthority() {
+    if (isGameOver) return;
+
+    remainingAuthority--;
+
+    if (remainingAuthority <= 0) {
+      isGameOver = true;
+      add(GameOverComponent(this));
+    }
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (isGameOver) return;
+    useAuthority();
   }
 }

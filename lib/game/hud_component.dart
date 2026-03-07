@@ -23,8 +23,8 @@ class HudComponent extends TextComponent {
     super.update(dt);
     text = """
 THREATS REMAINING: ${gameRef.remainingThreats}
-
-SYSTEM STABILITY: ${gameRef.lives}
+AUTHORITY LEFT: ${gameRef.remainingAuthority}
+STABILITY: ${gameRef.lives}
 """;
   }
 }
