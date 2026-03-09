@@ -1,19 +1,25 @@
-import 'package:big_brother_game/game/big_brother_game..dart';
+
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
+import 'big_brother_game..dart';
 
 class ThreatProgressBar extends PositionComponent
     with HasGameReference<BigBrotherGame> {
 
   double animatedProgress = 0;
-
   @override
   Future<void> onLoad() async {
-    size = Vector2(game.size.x * 0.8, 12);
-    position = Vector2(game.size.x * 0.1, 20);
-  }
+    size = Vector2(
+      game.size.x - game.contentPadding * 2 - 24,
+      12,
+    );
 
+    position = Vector2(
+      game.contentPadding + 12,
+      game.contentPadding + 5,
+    );
+  }
   @override
   void update(double dt) {
     super.update(dt);
@@ -23,20 +29,29 @@ class ThreatProgressBar extends PositionComponent
             game.maxThreats;
 
     // Smooth animation
-    animatedProgress += (targetProgress - animatedProgress) * 6 * dt;
+    animatedProgress +=
+        (targetProgress - animatedProgress) * 6 * dt;
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
+    // Background
     final backgroundPaint = Paint()
-      ..color = Colors.white.withOpacity(0.1);
+      ..color = Colors.white.withOpacity(0.08);
 
+    // Fill color becomes brighter near completion
     final fillPaint = Paint()
-      ..color = animatedProgress > 0.8
+      ..color = animatedProgress > 0.75
           ? Colors.greenAccent
           : Colors.green;
+
+    // Border (monitor style)
+    final borderPaint = Paint()
+      ..color = Colors.green.withOpacity(0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
 
     // Background bar
     canvas.drawRRect(
@@ -59,6 +74,15 @@ class ThreatProgressBar extends PositionComponent
         const Radius.circular(6),
       ),
       fillPaint,
+    );
+
+    // Subtle border
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        size.toRect(),
+        const Radius.circular(6),
+      ),
+      borderPaint,
     );
   }
 }

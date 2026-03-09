@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'person_component.dart';
 
 class CCTVTile extends PositionComponent {
-
-  // ✅ This must be OUTSIDE constructor
   PersonComponent? currentPerson;
 
   CCTVTile({
@@ -14,21 +12,24 @@ class CCTVTile extends PositionComponent {
     this.position = position;
     this.size = size;
   }
-  void spawnPerson(bool isRebel, bool isSuspicious) {
+
+  void spawnPerson(
+      bool isRebel,
+      bool isSuspicious,
+      bool isPriority,
+      ) {
     if (currentPerson != null) return;
 
     currentPerson = PersonComponent(
       isRebel: isRebel,
       isSuspicious: isSuspicious,
+      isPriority: isPriority,
     );
 
     currentPerson!.position = size / 2;
     add(currentPerson!);
-
-    // currentPerson!.onRemove = () {
-    //   currentPerson = null;
-    // };
   }
+
   @override
   void update(double dt) {
     super.update(dt);

@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:math' as math;
 
 import 'package:big_brother_game/game/hud_component.dart';
 import 'package:big_brother_game/game/intro_component.dart';
@@ -33,10 +32,11 @@ class BigBrotherGame extends FlameGame {
   double spawnTimer = 0;
   double spawnInterval = 1.2;
   double flashTimer = 0;
-
   double scanSweep = 0;
 
   AudioSource? clickSound;
+
+  final double contentPadding = 24;
 
   @override
   Color backgroundColor() => const Color(0xFF050A0A);
@@ -57,13 +57,19 @@ class BigBrotherGame extends FlameGame {
   }
 
   void _createGrid() {
-    final tileWidth = size.x / gridSize;
-    final tileHeight = size.y / gridSize;
+    final usableWidth = size.x - contentPadding * 2;
+    final usableHeight = size.y - contentPadding * 2;
+
+    final tileWidth = usableWidth / gridSize;
+    final tileHeight = usableHeight / gridSize;
 
     for (int row = 0; row < gridSize; row++) {
       for (int col = 0; col < gridSize; col++) {
         final tile = CCTVTile(
-          position: Vector2(col * tileWidth, row * tileHeight),
+          position: Vector2(
+            contentPadding + col * tileWidth,
+            contentPadding + row * tileHeight,
+          ),
           size: Vector2(tileWidth, tileHeight),
         );
 
@@ -90,7 +96,6 @@ class BigBrotherGame extends FlameGame {
       flashTimer -= dt;
     }
 
-    // Moving scan sweep
     scanSweep += dt * 120;
     if (scanSweep > size.y) {
       scanSweep = 0;
@@ -101,29 +106,37 @@ class BigBrotherGame extends FlameGame {
     if (tiles.isEmpty) return;
 
     final tile = tiles[random.nextInt(tiles.length)];
+
     final bool isRebel = random.nextBool();
+    final bool isPriority =
+        isRebel && random.nextDouble() < 0.15;
     final bool isSuspicious =
         !isRebel && random.nextDouble() < 0.3;
 
-    tile.spawnPerson(isRebel, isSuspicious);
+    tile.spawnPerson(isRebel, isSuspicious, isPriority);
 
     if (random.nextDouble() < 0.25) {
       final secondTile =
       tiles[random.nextInt(tiles.length)];
+
       final bool secondRebel = random.nextBool();
+      final bool secondPriority =
+          secondRebel && random.nextDouble() < 0.15;
       final bool secondSuspicious =
           !secondRebel && random.nextDouble() < 0.3;
 
       secondTile.spawnPerson(
-          secondRebel, secondSuspicious);
+          secondRebel,
+          secondSuspicious,
+          secondPriority);
     }
   }
 
-  void increaseScore() {
+  void increaseScore({int amount = 1}) {
     if (isGameOver) return;
 
-    score++;
-    remainingThreats--;
+    score += amount;
+    remainingThreats -= amount;
 
     if (!isFinalPhase && remainingThreats <= 10) {
       isFinalPhase = true;
@@ -199,10 +212,17 @@ class BigBrotherGame extends FlameGame {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // 🎯 Threat-based screen color progression
-    double overlayOpacity = 0.08;
-    Color overlayColor;
+    // ===== INSIDE SCREEN AREA (game view only) =====
 
+    final Rect screenRect = Rect.fromLTWH(
+      contentPadding,
+      contentPadding,
+      size.x - contentPadding * 2,
+      size.y - contentPadding * 2,
+    );
+
+    // Threat stage overlay (only inside screen)
+    Color overlayColor;
     if (remainingThreats > 25) {
       overlayColor = Colors.red;
     } else if (remainingThreats > 10) {
@@ -212,47 +232,119 @@ class BigBrotherGame extends FlameGame {
     }
 
     final overlayPaint = Paint()
-      ..color = overlayColor.withOpacity(overlayOpacity);
+      ..color = overlayColor.withOpacity(0.05);
 
-    canvas.drawRect(size.toRect(), overlayPaint);
+    canvas.drawRect(screenRect, overlayPaint);
 
-    // 🔎 Moving scan sweep
+    // Moving scan sweep (only inside screen)
     final sweepPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
           Colors.transparent,
-          Colors.green.withOpacity(0.18),
+          Colors.green.withOpacity(0.15),
           Colors.transparent,
         ],
       ).createShader(
-        Rect.fromLTWH(0, scanSweep - 50, size.x, 100),
+        Rect.fromLTWH(
+          contentPadding,
+          scanSweep - 50,
+          screenRect.width,
+          100,
+        ),
       );
 
     canvas.drawRect(
-      Rect.fromLTWH(0, scanSweep - 50, size.x, 100),
+      Rect.fromLTWH(
+        contentPadding,
+        scanSweep - 50,
+        screenRect.width,
+        100,
+      ),
       sweepPaint,
     );
 
-    // 🔴 Life loss flash
-    if (flashTimer > 0) {
-      final flashPaint = Paint()
-        ..color = Colors.red.withOpacity(0.3);
-
-      canvas.drawRect(size.toRect(), flashPaint);
-    }
-
-    // CRT scanlines
+    // CRT scanlines (inside screen only)
     final scanPaint = Paint()
-      ..color = Colors.green.withOpacity(0.05);
+      ..color = Colors.green.withOpacity(0.04);
 
-    for (double y = 0; y < size.y; y += 4) {
+    for (double y = contentPadding;
+    y < size.y - contentPadding;
+    y += 4) {
       canvas.drawLine(
-        Offset(0, y),
-        Offset(size.x, y),
+        Offset(contentPadding, y),
+        Offset(size.x - contentPadding, y),
         scanPaint,
       );
     }
+
+    // Life flash
+    if (flashTimer > 0) {
+      final flashPaint = Paint()
+        ..color = Colors.red.withOpacity(0.3);
+      canvas.drawRect(screenRect, flashPaint);
+    }
+
+    // ===== CAMERA FRAME =====
+
+    final framePaint = Paint()
+      ..color = const Color(0xFF0B1111);
+
+    // Top
+    canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.x, contentPadding),
+        framePaint);
+
+    // Bottom
+    canvas.drawRect(
+        Rect.fromLTWH(
+            0, size.y - contentPadding, size.x, contentPadding),
+        framePaint);
+
+    // Left
+    canvas.drawRect(
+        Rect.fromLTWH(0, 0, contentPadding, size.y),
+        framePaint);
+
+    // Right
+    canvas.drawRect(
+        Rect.fromLTWH(
+            size.x - contentPadding, 0, contentPadding, size.y),
+        framePaint);
+
+    // ===== INNER SCREEN BORDER =====
+
+    final borderPaint = Paint()
+      ..color = Colors.green.withOpacity(0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    canvas.drawRect(screenRect, borderPaint);
+
+    // ===== REC + TIMESTAMP =====
+
+    final now = DateTime.now();
+    final timeString =
+        "${now.hour.toString().padLeft(2, '0')}:"
+        "${now.minute.toString().padLeft(2, '0')}:"
+        "${now.second.toString().padLeft(2, '0')}";
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: "REC ●   $timeString",
+        style: const TextStyle(
+          color: Colors.redAccent,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    textPainter.paint(
+      canvas,
+      Offset(contentPadding + 10, 4),
+    );
   }
 }
