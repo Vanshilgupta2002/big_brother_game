@@ -39,6 +39,10 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
 
   AudioSource? clickSound;
 
+  bool isFinalPhase = false;
+
+
+
 
 
 
@@ -126,6 +130,17 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
     score++;
     remainingThreats--;
 
+    if (!isFinalPhase && remainingThreats <= 30) {
+      isFinalPhase = true;
+
+      // Increase pressure
+      spawnInterval *= 0.75;
+
+      // Optional small alert sound
+      // FlameAudio.play('alert.wav');
+    }
+
+
     if (remainingThreats <= 0) {
       isGameOver = true;
       add(VictoryComponent(this));
@@ -161,6 +176,8 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
     }
   }
   void resetGame() {
+
+    isFinalPhase = false;
     // Reset state
     remainingThreats = maxThreats;
     score = 0;
@@ -186,6 +203,13 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
+
+    if (isFinalPhase) {
+      final paint = Paint()
+        ..color = Colors.red.withOpacity(0.08);
+
+      canvas.drawRect(size.toRect(), paint);
+    }
 
     if (flashTimer > 0) {
       final flashPaint = Paint()

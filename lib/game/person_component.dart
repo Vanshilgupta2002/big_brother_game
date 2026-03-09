@@ -1,22 +1,24 @@
-import 'package:big_brother_game/game/big_brother_game..dart';
+import 'dart:math' as math;
+
+
 import 'package:big_brother_game/game/explosion_component.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/events.dart';
+import 'big_brother_game..dart';
 import 'score_popup_component.dart';
 
 class PersonComponent extends CircleComponent
     with TapCallbacks, HasGameReference<BigBrotherGame> {
   final bool isRebel;
+  final bool isSuspicious;
+
   late double lifeTime;
   bool wasTapped = false;
 
-  double blinkTimer = 0;
-  bool showEye = true;
-
-
-  final bool isSuspicious;
-
+  // Motion identity
+  Vector2? basePosition;
+  double pulseTimer = 0;
 
   PersonComponent({
     required this.isRebel,
@@ -28,60 +30,77 @@ class PersonComponent extends CircleComponent
       ..color = isRebel
           ? Colors.red
           : (isSuspicious
-          ? const Color(0xFF2E8B57) // darker green
+          ? const Color(0xFF2E8B57)
           : Colors.green),
   );
 
   @override
   Future<void> onLoad() async {
     lifeTime = 1.0 + (game.random.nextDouble() * 0.8);
+    basePosition = position.clone();
   }
+
   @override
   void update(double dt) {
     super.update(dt);
 
-    // 👁 Blink logic (used for rebel eye + suspicious pulse timing)
-    blinkTimer += dt;
-    if (blinkTimer >= 0.3) {
-      blinkTimer = 0;
-      showEye = !showEye;
-    }
-
-    // 🔍 Suspicious citizen pulsing (only if NOT rebel)
-    if (isSuspicious && !isRebel) {
-      position += Vector2(
-        (game.random.nextDouble() - 0.5) * 1.5,
-        (game.random.nextDouble() - 0.5) * 1.5,
-      );
-    }
-    // ⏳ Lifetime logic
     lifeTime -= dt;
     if (lifeTime <= 0) {
       removeFromParent();
+      return;
+    }
+
+    // 🟥 Rebel → subtle pulse (scale animation)
+    if (isRebel) {
+      pulseTimer += dt * 4;
+      final intensity = game.isFinalPhase ? 0.12 : 0.08;
+
+      final pulse = 1.0 + intensity * (0.5 + 0.5 * math.sin(pulseTimer));
+      scale = Vector2.all(pulse);
+      position = basePosition!;
+    }
+
+    // 🟡 Suspicious → subtle jitter
+    else if (isSuspicious) {
+      scale = Vector2.all(1.0);
+      position = basePosition! +
+          Vector2(
+            (game.random.nextDouble() - 0.5) * 2,
+            (game.random.nextDouble() - 0.5) * 2,
+          );
+    }
+
+    // 🟢 Citizen → completely stable
+    else {
+      scale = Vector2.all(1.0);
+      position = basePosition!;
     }
   }
 
-
-
   @override
   void onTapDown(TapDownEvent event) {
+    if (game.isGameOver) return;
+
     game.useAuthority();
 
-    wasTapped = true;
+    // Stop logic if authority just ended the game
+    if (game.isGameOver) {
+      removeFromParent();
+      return;
+    }
 
+    wasTapped = true;
     final impactPosition = absolutePosition.clone();
 
     if (isRebel) {
       game.increaseScore();
 
-      // 💥 Explosion effect
       game.add(
         ExplosionComponent(
           position: impactPosition,
         ),
       );
 
-      // +1 popup
       game.add(
         ScorePopupComponent(
           position: impactPosition,
@@ -109,30 +128,10 @@ class PersonComponent extends CircleComponent
 
   @override
   void onRemove() {
-    // If rebel escaped (not tapped), lose life.
-    // We must do this before calling super.onRemove() because game reference is detached afterwards.
     if (isRebel && !wasTapped) {
       game.loseLife();
     }
 
     super.onRemove();
   }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-
-    if (isRebel && showEye) {
-      final eyePaint = Paint()..color = Colors.white;
-
-      canvas.drawCircle(
-        Offset(0, 0),
-        6,
-        eyePaint,
-      );
-    }
-  }
-
-
 }
-
