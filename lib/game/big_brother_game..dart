@@ -1,62 +1,51 @@
+import 'dart:math';
+import 'dart:math' as math;
+
 import 'package:big_brother_game/game/hud_component.dart';
 import 'package:big_brother_game/game/intro_component.dart';
 import 'package:big_brother_game/game/threat_progress_bar.dart';
+import 'package:big_brother_game/game/victory_component.dart';
+import 'package:big_brother_game/game/game_over_component.dart';
 import 'package:flame/game.dart';
-import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/components.dart';
-import 'dart:math';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'cctv_tile.dart';
 import 'person_component.dart';
-import 'game_over_component.dart';
-import 'victory_component.dart';
 
-import 'package:flame/events.dart';
-
-class BigBrotherGame extends FlameGame with TapCallbacks {
+class BigBrotherGame extends FlameGame {
   final int gridSize = 3;
-
   final List<CCTVTile> tiles = [];
   final Random random = Random();
 
   int score = 0;
   int lives = 3;
 
-  int remainingThreats = 40;
   final int maxThreats = 40;
-
+  int remainingThreats = 40;
 
   final int maxAuthority = 50;
   int remainingAuthority = 50;
 
-
   bool isGameOver = false;
+  bool isFinalPhase = false;
 
   double spawnTimer = 0;
   double spawnInterval = 1.2;
-
   double flashTimer = 0;
 
+  double scanSweep = 0;
+
   AudioSource? clickSound;
-
-  bool isFinalPhase = false;
-
-
-
-
-
-
-
-
 
   @override
   Color backgroundColor() => const Color(0xFF050A0A);
 
   @override
   Future<void> onLoad() async {
-    // ✅ Preload audio (important for Web)
     await SoLoud.instance.init();
-    clickSound = await SoLoud.instance.loadAsset('assets/audio/click.mp3');
+    clickSound =
+    await SoLoud.instance.loadAsset('assets/audio/click.mp3');
 
     add(IntroComponent());
   }
@@ -100,46 +89,46 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
     if (flashTimer > 0) {
       flashTimer -= dt;
     }
+
+    // Moving scan sweep
+    scanSweep += dt * 120;
+    if (scanSweep > size.y) {
+      scanSweep = 0;
+    }
   }
+
   void _spawnRandomPerson() {
     if (tiles.isEmpty) return;
 
     final tile = tiles[random.nextInt(tiles.length)];
-
     final bool isRebel = random.nextBool();
-
-    // 30% of non-rebels are suspicious
     final bool isSuspicious =
         !isRebel && random.nextDouble() < 0.3;
 
     tile.spawnPerson(isRebel, isSuspicious);
 
-    // 25% chance double spawn
     if (random.nextDouble() < 0.25) {
-      final secondTile = tiles[random.nextInt(tiles.length)];
+      final secondTile =
+      tiles[random.nextInt(tiles.length)];
       final bool secondRebel = random.nextBool();
       final bool secondSuspicious =
           !secondRebel && random.nextDouble() < 0.3;
 
-      secondTile.spawnPerson(secondRebel, secondSuspicious);
+      secondTile.spawnPerson(
+          secondRebel, secondSuspicious);
     }
   }
+
   void increaseScore() {
     if (isGameOver) return;
 
     score++;
     remainingThreats--;
 
-    if (!isFinalPhase && remainingThreats <= 30) {
+    if (!isFinalPhase && remainingThreats <= 10) {
       isFinalPhase = true;
-
-      // Increase pressure
       spawnInterval *= 0.75;
-
-      // Optional small alert sound
-      // FlameAudio.play('alert.wav');
     }
-
 
     if (remainingThreats <= 0) {
       isGameOver = true;
@@ -153,7 +142,6 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
 
     _playClickSound();
   }
-
 
   void loseLife() {
     if (isGameOver) return;
@@ -169,67 +157,6 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
     _playClickSound();
   }
 
-  void _playClickSound() {
-    // ✅ Works correctly with assets/audio/
-    if (clickSound != null) {
-      SoLoud.instance.play(clickSound!).ignore();
-    }
-  }
-  void resetGame() {
-
-    isFinalPhase = false;
-    // Reset state
-    remainingThreats = maxThreats;
-    score = 0;
-    lives = 3;
-    spawnInterval = 1.2;
-    spawnTimer = 0;
-    isGameOver = false;
-
-    // Remove all existing components
-    for (final component in children.toList()) {
-      component.removeFromParent();
-    }
-
-    tiles.clear();
-
-    // Rebuild game
-    _createGrid();
-    add(HudComponent(this));
-    add(ThreatProgressBar());
-    remainingAuthority = maxAuthority;
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-
-    if (isFinalPhase) {
-      final paint = Paint()
-        ..color = Colors.red.withOpacity(0.08);
-
-      canvas.drawRect(size.toRect(), paint);
-    }
-
-    if (flashTimer > 0) {
-      final flashPaint = Paint()
-        ..color = Colors.red.withOpacity(0.3);
-
-      canvas.drawRect(size.toRect(), flashPaint);
-    }
-
-    final scanPaint = Paint()
-      ..color = Colors.green.withOpacity(0.05);
-
-    for (double y = 0; y < size.y; y += 4) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.x, y),
-        scanPaint,
-      );
-    }
-  }
-
   void useAuthority() {
     if (isGameOver) return;
 
@@ -241,9 +168,91 @@ class BigBrotherGame extends FlameGame with TapCallbacks {
     }
   }
 
+  void _playClickSound() {
+    if (clickSound != null) {
+      SoLoud.instance.play(clickSound!).ignore();
+    }
+  }
+
+  void resetGame() {
+    isFinalPhase = false;
+    remainingThreats = maxThreats;
+    remainingAuthority = maxAuthority;
+    score = 0;
+    lives = 3;
+    spawnInterval = 1.2;
+    spawnTimer = 0;
+    isGameOver = false;
+
+    for (final component in children.toList()) {
+      component.removeFromParent();
+    }
+
+    tiles.clear();
+
+    _createGrid();
+    add(HudComponent(this));
+    add(ThreatProgressBar());
+  }
+
   @override
-  void onTapDown(TapDownEvent event) {
-    if (isGameOver) return;
-    useAuthority();
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    // 🎯 Threat-based screen color progression
+    double overlayOpacity = 0.08;
+    Color overlayColor;
+
+    if (remainingThreats > 25) {
+      overlayColor = Colors.red;
+    } else if (remainingThreats > 10) {
+      overlayColor = Colors.yellow;
+    } else {
+      overlayColor = Colors.green;
+    }
+
+    final overlayPaint = Paint()
+      ..color = overlayColor.withOpacity(overlayOpacity);
+
+    canvas.drawRect(size.toRect(), overlayPaint);
+
+    // 🔎 Moving scan sweep
+    final sweepPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.transparent,
+          Colors.green.withOpacity(0.18),
+          Colors.transparent,
+        ],
+      ).createShader(
+        Rect.fromLTWH(0, scanSweep - 50, size.x, 100),
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, scanSweep - 50, size.x, 100),
+      sweepPaint,
+    );
+
+    // 🔴 Life loss flash
+    if (flashTimer > 0) {
+      final flashPaint = Paint()
+        ..color = Colors.red.withOpacity(0.3);
+
+      canvas.drawRect(size.toRect(), flashPaint);
+    }
+
+    // CRT scanlines
+    final scanPaint = Paint()
+      ..color = Colors.green.withOpacity(0.05);
+
+    for (double y = 0; y < size.y; y += 4) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.x, y),
+        scanPaint,
+      );
+    }
   }
 }
