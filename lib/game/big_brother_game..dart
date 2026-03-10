@@ -43,6 +43,9 @@ class BigBrotherGame extends FlameGame {
   double shakeTimer = 0.5;
   double shakeIntensity = 25;
 
+  double panicPulseTimer = 0;
+  double panicFlash = 0;
+
 
   @override
   Color backgroundColor() => const Color(0xFF040808);
@@ -131,6 +134,20 @@ class BigBrotherGame extends FlameGame {
       if (shakeTimer <= 0) {
         camera.viewfinder.position = Vector2.zero();
       }
+    }
+
+    // ===== PANIC PULSE LOGIC =====
+    if (remainingThreats <= 10 && !isGameOver) {
+      panicPulseTimer += dt;
+
+      if (panicPulseTimer >= 1.5) {
+        panicPulseTimer = 0;
+        panicFlash = 0.25; // pulse duration
+      }
+    }
+
+    if (panicFlash > 0) {
+      panicFlash -= dt;
     }
   }
   void _spawnRandomPerson() {
@@ -239,7 +256,6 @@ class BigBrotherGame extends FlameGame {
     add(HudComponent(this));
     add(ThreatProgressBar());
   }
-
   @override
   void render(Canvas canvas) {
     super.render(canvas);
@@ -272,7 +288,8 @@ class BigBrotherGame extends FlameGame {
       screenRect,
       Paint()..color = overlayColor.withOpacity(opacity),
     );
-    // Scan sweep
+
+    // ===== SCAN SWEEP =====
     final sweepPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -301,7 +318,7 @@ class BigBrotherGame extends FlameGame {
       sweepPaint,
     );
 
-    // CRT scanlines
+    // ===== CRT SCANLINES =====
     final scanPaint =
     Paint()..color = Colors.green.withOpacity(0.04);
 
@@ -315,7 +332,7 @@ class BigBrotherGame extends FlameGame {
       );
     }
 
-    // Noise flicker
+    // ===== NOISE FLICKER =====
     if (Random().nextDouble() < 0.03) {
       canvas.drawRect(
         screenRect,
@@ -323,7 +340,7 @@ class BigBrotherGame extends FlameGame {
       );
     }
 
-    // Vignette
+    // ===== VIGNETTE =====
     final vignette = RadialGradient(
       center: Alignment.center,
       radius: 0.9,
@@ -335,7 +352,7 @@ class BigBrotherGame extends FlameGame {
 
     canvas.drawRect(screenRect, Paint()..shader = vignette);
 
-    // Frame
+    // ===== CAMERA FRAME =====
     final framePaint =
     Paint()..color = const Color(0xFF0B1111);
 
@@ -354,7 +371,7 @@ class BigBrotherGame extends FlameGame {
             size.x - contentPadding, 0, contentPadding, size.y),
         framePaint);
 
-    // Camera label
+    // ===== CAMERA LABEL =====
     final camPainter = TextPainter(
       text: const TextSpan(
         text: "CAM 03  •  SECTOR A",
@@ -373,7 +390,7 @@ class BigBrotherGame extends FlameGame {
       Offset(contentPadding + 10, size.y - 20),
     );
 
-    // Date + Time
+    // ===== DATE + TIME =====
     final now = DateTime.now();
     final dateTimeString =
         "${now.day.toString().padLeft(2, '0')}/"
@@ -404,7 +421,7 @@ class BigBrotherGame extends FlameGame {
       ),
     );
 
-    // REC
+    // ===== REC =====
     if (recBlink) {
       canvas.drawCircle(
         Offset(contentPadding + 15, 14),
@@ -432,7 +449,18 @@ class BigBrotherGame extends FlameGame {
       Offset(contentPadding + 30, 6),
     );
 
-    // 🔥 DAMAGE FLASH (ALWAYS LAST)
+    // ===== PANIC RED PULSE (≤10 threats) =====
+    if (panicFlash > 0) {
+      final pulseOpacity = (panicFlash / 0.25) * 0.35;
+
+      canvas.drawRect(
+        screenRect,
+        Paint()
+          ..color = Colors.orangeAccent.withOpacity(pulseOpacity),
+      );
+    }
+
+    // ===== DAMAGE FLASH (ALWAYS LAST) =====
     if (flashTimer > 0) {
       final intensity = flashTimer * 3;
 
