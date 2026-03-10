@@ -63,6 +63,12 @@ flutter:
   assets:
     - assets/audio/
 
+
+  fonts:
+      - family: SurveillanceMono
+        fonts:
+           - asset: assets/fonts/ShareTechMono-Regular.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
