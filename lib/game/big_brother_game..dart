@@ -40,6 +40,9 @@ class BigBrotherGame extends FlameGame {
   AudioSource? clickSound;
 
   final double contentPadding = 24;
+  double shakeTimer = 0.5;
+  double shakeIntensity = 25;
+
 
   @override
   Color backgroundColor() => const Color(0xFF040808);
@@ -97,7 +100,18 @@ class BigBrotherGame extends FlameGame {
       flashTimer -= dt;
     }
 
-    scanSweep += dt * 120;
+    // ===== Dynamic Scan Speed Based On Threats =====
+    double scanSpeed;
+
+    if (remainingThreats > 24) {
+      scanSpeed = 120;      // Normal
+    } else if (remainingThreats > 10) {
+      scanSpeed = 200;      // Faster
+    } else {
+      scanSpeed = 320;      // Panic mode
+    }
+
+    scanSweep += dt * scanSpeed;
     if (scanSweep > size.y) scanSweep = 0;
 
     recBlinkTimer += dt;
@@ -105,8 +119,20 @@ class BigBrotherGame extends FlameGame {
       recBlinkTimer = 0;
       recBlink = !recBlink;
     }
-  }
+// 🎥 CAMERA SHAKE (IMPROVED)
+    if (shakeTimer > 0) {
+      shakeTimer -= dt;
 
+      final progress = shakeTimer / 0.45;
+      final offset = sin(shakeTimer * 60) * 12 * progress;
+
+      camera.viewfinder.position = Vector2(offset, 0);
+
+      if (shakeTimer <= 0) {
+        camera.viewfinder.position = Vector2.zero();
+      }
+    }
+  }
   void _spawnRandomPerson() {
     if (tiles.isEmpty) return;
 
@@ -162,7 +188,11 @@ class BigBrotherGame extends FlameGame {
     if (isGameOver) return;
 
     lives--;
-    flashTimer = 0.35; // stronger flash
+    flashTimer = 0.35;
+
+    // 🎥 Start camera shake
+    shakeTimer = 0.3;          // duration
+    shakeIntensity = 8;        // strength
 
     if (lives <= 0) {
       isGameOver = true;
