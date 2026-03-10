@@ -110,15 +110,34 @@ class BigBrotherGame extends FlameGame {
   void _spawnRandomPerson() {
     if (tiles.isEmpty) return;
 
+    // First spawn
     final tile = tiles[random.nextInt(tiles.length)];
 
-    tile.spawnPerson(
-      random.nextBool(),
-      random.nextDouble() < 0.3,
-      random.nextDouble() < 0.15,
-    );
-  }
+    final bool isRebel = random.nextBool();
+    final bool isPriority =
+        isRebel && random.nextDouble() < 0.15;
+    final bool isSuspicious =
+        !isRebel && random.nextDouble() < 0.3;
 
+    tile.spawnPerson(isRebel, isSuspicious, isPriority);
+
+    // 🔥 25% chance of second spawn
+    if (random.nextDouble() < 0.25) {
+      final secondTile =
+      tiles[random.nextInt(tiles.length)];
+
+      final bool secondRebel = random.nextBool();
+      final bool secondPriority =
+          secondRebel && random.nextDouble() < 0.15;
+      final bool secondSuspicious =
+          !secondRebel && random.nextDouble() < 0.3;
+
+      secondTile.spawnPerson(
+          secondRebel,
+          secondSuspicious,
+          secondPriority);
+    }
+  }
   void increaseScore({int amount = 1}) {
     if (isGameOver) return;
 
@@ -203,21 +222,26 @@ class BigBrotherGame extends FlameGame {
     );
 
     // ===== THREAT STAGE OVERLAY =====
+    double dangerFactor = remainingThreats / maxThreats;
+
     Color overlayColor;
+    double opacity;
 
     if (remainingThreats > 25) {
       overlayColor = Colors.red;
+      opacity = 0.15 + (dangerFactor * 0.08);
     } else if (remainingThreats > 10) {
       overlayColor = Colors.yellow;
+      opacity = 0.18;
     } else {
       overlayColor = Colors.green;
+      opacity = 0.20;
     }
 
     canvas.drawRect(
       screenRect,
-      Paint()..color = overlayColor.withOpacity(0.20),
+      Paint()..color = overlayColor.withOpacity(opacity),
     );
-
     // Scan sweep
     final sweepPaint = Paint()
       ..shader = LinearGradient(
