@@ -38,6 +38,9 @@ class BigBrotherGame extends FlameGame {
   double recBlinkTimer = 0;
 
   AudioSource? clickSound;
+  AudioSource? scanLoop;
+  SoundHandle? scanHandle;
+
 
   final double contentPadding = 24;
   double shakeTimer = 0.5;
@@ -49,20 +52,30 @@ class BigBrotherGame extends FlameGame {
 
   @override
   Color backgroundColor() => const Color(0xFF040808);
-
   @override
   Future<void> onLoad() async {
     await SoLoud.instance.init();
+
     clickSound =
     await SoLoud.instance.loadAsset('assets/audio/click.mp3');
 
+    scanLoop =
+    await SoLoud.instance.loadAsset('assets/audio/scan2.mp3');
+
     add(IntroComponent());
   }
-
-  void startGame() {
+  Future<void> startGame() async {
     _createGrid();
     add(HudComponent(this));
     add(ThreatProgressBar());
+
+    if (scanLoop != null) {
+      scanHandle = await SoLoud.instance.play(
+        scanLoop!,
+        volume: 0.25,
+        looping: true,
+      );
+    }
   }
 
   void _createGrid() {
@@ -200,19 +213,24 @@ class BigBrotherGame extends FlameGame {
 
     _playClickSound();
   }
-
-  void loseLife() {
+  Future<void> loseLife() async {
     if (isGameOver) return;
 
     lives--;
     flashTimer = 0.35;
 
     // 🎥 Start camera shake
-    shakeTimer = 0.3;          // duration
-    shakeIntensity = 8;        // strength
+    shakeTimer = 0.3;
+    shakeIntensity = 8;
 
     if (lives <= 0) {
       isGameOver = true;
+
+      // 🔊 Stop background scan sound ONLY on game over
+      if (scanHandle != null) {
+        await SoLoud.instance.stop(scanHandle!);
+      }
+
       add(GameOverComponent(this));
     }
 
@@ -236,7 +254,7 @@ class BigBrotherGame extends FlameGame {
     }
   }
 
-  void resetGame() {
+  Future<void> resetGame() async {
     isFinalPhase = false;
     remainingThreats = maxThreats;
     remainingAuthority = maxAuthority;
@@ -245,6 +263,12 @@ class BigBrotherGame extends FlameGame {
     spawnInterval = 1.2;
     spawnTimer = 0;
     isGameOver = false;
+
+    if (scanHandle != null) {
+      try {
+        await SoLoud.instance.stop(scanHandle!);
+      } catch (_) {}
+    }
 
     for (final component in children.toList()) {
       component.removeFromParent();
@@ -255,6 +279,14 @@ class BigBrotherGame extends FlameGame {
     _createGrid();
     add(HudComponent(this));
     add(ThreatProgressBar());
+
+    if (scanLoop != null) {
+      scanHandle = await SoLoud.instance.play(
+        scanLoop!,
+        volume: 0.25,
+        looping: true,
+      );
+    }
   }
   @override
   void render(Canvas canvas) {
