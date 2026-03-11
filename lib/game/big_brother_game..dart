@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:big_brother_game/game/hud_component.dart';
-import 'package:big_brother_game/game/intro_component.dart';
 import 'package:big_brother_game/game/threat_progress_bar.dart';
 import 'package:big_brother_game/game/victory_component.dart';
 import 'package:big_brother_game/game/game_over_component.dart';
@@ -26,6 +25,7 @@ class BigBrotherGame extends FlameGame {
   final int maxAuthority = 50;
   int remainingAuthority = 50;
 
+  bool isGameStarted = false;
   bool isGameOver = false;
   bool isFinalPhase = false;
 
@@ -69,10 +69,9 @@ class BigBrotherGame extends FlameGame {
 
     scanPing =
     await SoLoud.instance.loadAsset('assets/audio/scanping.mp3');
-
-    add(IntroComponent());
   }
   Future<void> startGame() async {
+    isGameStarted = true;
     _createGrid();
     add(HudComponent(this));
     add(ThreatProgressBar());
@@ -112,7 +111,7 @@ class BigBrotherGame extends FlameGame {
   @override
   void update(double dt) {
     super.update(dt);
-    if (isGameOver) return;
+    if (!isGameStarted || isGameOver) return;
 
     spawnTimer += dt;
     if (spawnTimer >= spawnInterval) {
