@@ -15,6 +15,7 @@ class _SurveillanceIntroState extends State<SurveillanceIntro>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  Timer? _cursorTimer;
 
   bool _cursorVisible = true;
 
@@ -31,7 +32,7 @@ class _SurveillanceIntroState extends State<SurveillanceIntro>
         Tween(begin: 0.6, end: 1.0).animate(_pulseController);
 
     // Blinking cursor
-    Timer.periodic(const Duration(milliseconds: 600), (timer) {
+    _cursorTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
       if (!mounted) return;
       setState(() {
         _cursorVisible = !_cursorVisible;
@@ -42,6 +43,7 @@ class _SurveillanceIntroState extends State<SurveillanceIntro>
   @override
   void dispose() {
     _pulseController.dispose();
+    _cursorTimer?.cancel();
     super.dispose();
   }
 
@@ -203,6 +205,12 @@ class _ScanLineState extends State<_ScanLine>
     _controller =
     AnimationController(vsync: this, duration: const Duration(seconds: 6))
       ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
