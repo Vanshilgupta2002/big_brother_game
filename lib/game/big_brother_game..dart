@@ -33,6 +33,7 @@ class BigBrotherGame extends FlameGame {
   double spawnInterval = 1.2;
   double flashTimer = 0;
   double scanSweep = 0;
+  int scanSweepCount = 0;
 
   bool recBlink = true;
   double recBlinkTimer = 0;
@@ -49,6 +50,10 @@ class BigBrotherGame extends FlameGame {
   double panicPulseTimer = 0;
   double panicFlash = 0;
 
+  AudioSource? scanPing;
+
+
+
 
   @override
   Color backgroundColor() => const Color(0xFF040808);
@@ -60,7 +65,10 @@ class BigBrotherGame extends FlameGame {
     await SoLoud.instance.loadAsset('assets/audio/click.mp3');
 
     scanLoop =
-    await SoLoud.instance.loadAsset('assets/audio/scan2.mp3');
+    await SoLoud.instance.loadAsset('assets/audio/background.mp3');
+
+    scanPing =
+    await SoLoud.instance.loadAsset('assets/audio/scanping.mp3');
 
     add(IntroComponent());
   }
@@ -126,9 +134,25 @@ class BigBrotherGame extends FlameGame {
     } else {
       scanSpeed = 320;      // Panic mode
     }
-
     scanSweep += dt * scanSpeed;
-    if (scanSweep > size.y) scanSweep = 0;
+
+    if (scanSweep >= size.y) {
+      scanSweep = 0;
+      scanSweepCount++;
+
+// 🔊 Play ping once every 8 sweeps
+      if (scanSweepCount >= 6) {
+        scanSweepCount = 0;
+        if (scanPing != null) {
+          SoLoud.instance.play(
+            scanPing!,
+            volume: 0.35,
+          );
+        }
+      }
+    }
+
+
 
     recBlinkTimer += dt;
     if (recBlinkTimer >= 0.6) {
@@ -162,6 +186,21 @@ class BigBrotherGame extends FlameGame {
     if (panicFlash > 0) {
       panicFlash -= dt;
     }
+
+
+
+
+    // ===== AMBIENT SPEED ADJUSTMENT =====
+    if (scanHandle != null) {
+      if (remainingThreats <= 10) {
+        SoLoud.instance.setRelativePlaySpeed(scanHandle!, 1.15);
+      } else if (remainingThreats <= 25) {
+        SoLoud.instance.setRelativePlaySpeed(scanHandle!, 1.05);
+      } else {
+        SoLoud.instance.setRelativePlaySpeed(scanHandle!, 1.0);
+      }
+    }
+
   }
   void _spawnRandomPerson() {
     if (tiles.isEmpty) return;
@@ -262,6 +301,7 @@ class BigBrotherGame extends FlameGame {
     lives = 3;
     spawnInterval = 1.2;
     spawnTimer = 0;
+    scanSweepCount = 0;
     isGameOver = false;
 
     if (scanHandle != null) {
