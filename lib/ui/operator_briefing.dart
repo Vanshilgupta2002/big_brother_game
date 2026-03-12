@@ -1,0 +1,306 @@
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/material.dart';
+
+enum BriefingStage { boot, test, warning, ready }
+
+class OperatorBriefing extends StatefulWidget {
+  final VoidCallback onStart;
+
+
+  const OperatorBriefing({super.key, required this.onStart});
+
+  @override
+  State<OperatorBriefing> createState() => _OperatorBriefingState();
+}
+
+class _OperatorBriefingState extends State<OperatorBriefing>
+    with SingleTickerProviderStateMixin {
+
+  BriefingStage stage = BriefingStage.boot;
+
+  String bootText = "";
+  final String fullBootText =
+      "INITIALIZING SURVEILLANCE GRID...\n"
+      "AUTHORITY PROTOCOL ONLINE...\n"
+      "OPERATOR STATUS: UNVERIFIED\n\n"
+      "COMMENCING QUALIFICATION TEST.";
+
+  bool showRebel = false;
+  bool tapped = false;
+  String message = "";
+
+  late AnimationController _scanController;
+  late Animation<double> _scanAnimation;
+  int _dotCount = 0;
+  Timer? _dotTimer;
+
+
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scanController =
+    AnimationController(vsync: this, duration: const Duration(seconds: 6))
+      ..repeat();
+
+    _scanAnimation =
+        Tween(begin: 0.0, end: 1.0).animate(_scanController);
+
+    _typeBootText();
+
+    _dotTimer = Timer.periodic(
+      const Duration(milliseconds: 400),
+          (timer) {
+        if (!mounted) return;
+        setState(() {
+          _dotCount = (_dotCount + 1) % 4;
+        });
+      },
+    );
+
+
+
+  }
+
+  void _typeBootText() async {
+    for (int i = 0; i < fullBootText.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 25));
+      setState(() {
+        bootText = fullBootText.substring(0, i + 1);
+      });
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => stage = BriefingStage.test);
+
+    await Future.delayed(const Duration(milliseconds: 800));
+    setState(() => showRebel = true);
+  }
+
+  void _handleTap(bool tappedRebel) async {
+    if (tapped) return;
+    tapped = true;
+
+    if (tappedRebel) {
+      message = "RESPONSE ACCEPTABLE.";
+    } else {
+      message = "ERROR: CIVILIAN ENGAGEMENT.\nPERFORMANCE FLAGGED.";
+    }
+
+    setState(() {});
+
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() => stage = BriefingStage.warning);
+
+    await Future.delayed(const Duration(seconds: 3));
+    setState(() => stage = BriefingStage.ready);
+  }
+  @override
+  void dispose() {
+    _dotTimer?.cancel();
+    _scanController.dispose();
+    super.dispose();
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF070707),
+      body: Stack(
+        children: [
+
+          // Subtle radial gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topCenter,
+                radius: 1.4,
+                colors: [
+                  Color(0xFF220000),
+                  Color(0xFF070707),
+                ],
+              ),
+            ),
+          ),
+
+          // Moving scan line
+          AnimatedBuilder(
+            animation: _scanAnimation,
+            builder: (_, __) {
+              return Positioned(
+                top: MediaQuery.of(context).size.height *
+                    _scanAnimation.value,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 2,
+                  color: Colors.greenAccent.withOpacity(0.1),
+                ),
+              );
+            },
+          ),
+
+          // Main card
+          Center(
+            child: Container(
+              width: 760,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111111),
+                border: Border.all(
+                    color: Colors.greenAccent.withOpacity(0.6)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.greenAccent.withOpacity(0.15),
+                    blurRadius: 25,
+                  )
+                ],
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: _buildStage(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStage() {
+
+    switch (stage) {
+
+      case BriefingStage.boot:
+        return Text(
+          bootText,
+          key: const ValueKey("boot"),
+          style: const TextStyle(
+            color: Colors.greenAccent,
+            height: 1.6,
+            letterSpacing: 1.5,
+          ),
+        );
+
+      case BriefingStage.test:
+        return Column(
+          key: const ValueKey("test"),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+
+            const Text(
+              "IDENTIFY HOSTILE TARGET",
+              style: TextStyle(
+                color: Colors.white,
+                letterSpacing: 3,
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildTarget(showRebel, true),
+                _buildTarget(false, false),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                letterSpacing: 1.5,
+              ),
+            )
+          ],
+        );
+
+      case BriefingStage.warning:
+        return const Text(
+          "NOTICE:\n\n"
+              "All operator decisions are logged.\n"
+              "Civilian interference reduces stability.\n"
+              "Authority misuse will be recorded.",
+          key: ValueKey("warning"),
+          style: TextStyle(
+            color: Colors.white70,
+            height: 1.7,
+            letterSpacing: 1.3,
+          ),
+        );
+      case BriefingStage.ready:
+        return Column(
+          key: const ValueKey("ready"),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "AUTHORIZATION GRANTED.",
+              style: TextStyle(
+                color: Colors.greenAccent,
+                letterSpacing: 3,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            OutlinedButton(
+              onPressed: widget.onStart,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.greenAccent),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
+              ),
+              child: Text(
+                "BEGIN MONITORING${'.' * _dotCount}",
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  letterSpacing: 2,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        );
+
+    }
+  }
+
+  Widget _buildTarget(bool rebel, bool isLeft) {
+    return GestureDetector(
+      onTap: () => _handleTap(rebel),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          color: rebel
+              ? Colors.redAccent.withOpacity(0.25)
+              : Colors.greenAccent.withOpacity(0.1),
+          border: Border.all(
+            color: rebel ? Colors.redAccent : Colors.greenAccent,
+            width: rebel ? 3 : 1.5,
+          ),
+          boxShadow: rebel
+              ? [
+            BoxShadow(
+              color:
+              Colors.redAccent.withOpacity(0.4),
+              blurRadius: 15,
+            )
+          ]
+              : [],
+        ),
+      ),
+    );
+  }
+}
