@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 
 enum BriefingStage { boot, test, warning, ready }
 
@@ -37,6 +38,9 @@ class _OperatorBriefingState extends State<OperatorBriefing>
   bool _connecting = false;
   bool _collapse = false;
 
+  AudioSource? _briefingAudio;
+  SoundHandle? _briefingHandle;
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +52,7 @@ class _OperatorBriefingState extends State<OperatorBriefing>
     _scanAnimation =
         Tween(begin: 0.0, end: 1.0).animate(_scanController);
 
-    _typeBootText();
+    _initAudioAndType();
 
     _dotTimer = Timer.periodic(
       const Duration(milliseconds: 400),
@@ -61,13 +65,36 @@ class _OperatorBriefingState extends State<OperatorBriefing>
     );
   }
 
+  Future<void> _initAudioAndType() async {
+    try {
+      _briefingAudio = await SoLoud.instance.loadAsset('assets/audio/briefing.mp3');
+    } catch (e) {
+      debugPrint("Failed to load briefing audio: $e");
+    }
+
+    _typeBootText();
+  }
+
   void _typeBootText() async {
+    if (_briefingAudio != null) {
+      // You can increase or decrease the volume here. 
+      // 1.0 is default max, 0.5 is half, 2.0 is double.
+      _briefingHandle = await SoLoud.instance.play(
+        _briefingAudio!,
+        volume: 2.0,
+      );
+    }
+
     for (int i = 0; i < fullBootText.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 25));
+      await Future.delayed(const Duration(milliseconds: 65));
       if (!mounted) return;
       setState(() {
         bootText = fullBootText.substring(0, i + 1);
       });
+    }
+
+    if (_briefingHandle != null) {
+      await SoLoud.instance.stop(_briefingHandle!);
     }
 
     await Future.delayed(const Duration(seconds: 1));
@@ -122,6 +149,9 @@ class _OperatorBriefingState extends State<OperatorBriefing>
   void dispose() {
     _dotTimer?.cancel();
     _scanController.dispose();
+    if (_briefingHandle != null) {
+      SoLoud.instance.stop(_briefingHandle!);
+    }
     super.dispose();
   }
 
