@@ -41,6 +41,8 @@ class BigBrotherGame extends FlameGame {
   AudioSource? clickSound;
   AudioSource? scanLoop;
   SoundHandle? scanHandle;
+  AudioSource? introMusic;
+  SoundHandle? introHandle;
 
 
   final double contentPadding = 24;
@@ -69,12 +71,26 @@ class BigBrotherGame extends FlameGame {
 
     scanPing =
     await SoLoud.instance.loadAsset('assets/audio/scanping.mp3');
+
+    introMusic =
+    await SoLoud.instance.loadAsset('assets/audio/mainentryscreen.mp3');
+
+    if (introMusic != null) {
+      introHandle = await SoLoud.instance.play(introMusic!, looping: true);
+    }
   }
   Future<void> startGame() async {
     isGameStarted = true;
     _createGrid();
     add(HudComponent(this));
     add(ThreatProgressBar());
+
+    if (introHandle != null) {
+      try {
+        await SoLoud.instance.stop(introHandle!);
+      } catch (_) {}
+      introHandle = null;
+    }
 
     if (scanLoop != null) {
       scanHandle = await SoLoud.instance.play(

@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 enum BriefingStage { boot, test, warning, ready }
 
 class OperatorBriefing extends StatefulWidget {
   final VoidCallback onStart;
-
 
   const OperatorBriefing({super.key, required this.onStart});
 
@@ -32,10 +30,12 @@ class _OperatorBriefingState extends State<OperatorBriefing>
 
   late AnimationController _scanController;
   late Animation<double> _scanAnimation;
+
   int _dotCount = 0;
   Timer? _dotTimer;
 
-
+  bool _connecting = false;
+  bool _collapse = false;
 
   @override
   void initState() {
@@ -59,23 +59,23 @@ class _OperatorBriefingState extends State<OperatorBriefing>
         });
       },
     );
-
-
-
   }
 
   void _typeBootText() async {
     for (int i = 0; i < fullBootText.length; i++) {
       await Future.delayed(const Duration(milliseconds: 25));
+      if (!mounted) return;
       setState(() {
         bootText = fullBootText.substring(0, i + 1);
       });
     }
 
     await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
     setState(() => stage = BriefingStage.test);
 
     await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
     setState(() => showRebel = true);
   }
 
@@ -92,18 +92,38 @@ class _OperatorBriefingState extends State<OperatorBriefing>
     setState(() {});
 
     await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
     setState(() => stage = BriefingStage.warning);
 
     await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
     setState(() => stage = BriefingStage.ready);
   }
+
+  void _startConnection() async {
+    setState(() {
+      _connecting = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
+
+    setState(() {
+      _collapse = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    widget.onStart();
+  }
+
   @override
   void dispose() {
     _dotTimer?.cancel();
     _scanController.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +132,7 @@ class _OperatorBriefingState extends State<OperatorBriefing>
       body: Stack(
         children: [
 
-          // Subtle radial gradient
+          // Background gradient
           Container(
             decoration: const BoxDecoration(
               gradient: RadialGradient(
@@ -143,11 +163,15 @@ class _OperatorBriefingState extends State<OperatorBriefing>
             },
           ),
 
-          // Main card
+          // Main animated card
           Center(
-            child: Container(
-              width: 760,
-              padding: const EdgeInsets.all(32),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+              width: _collapse ? 0 : 760,
+              padding: _collapse
+                  ? EdgeInsets.zero
+                  : const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: const Color(0xFF111111),
                 border: Border.all(
@@ -159,7 +183,9 @@ class _OperatorBriefingState extends State<OperatorBriefing>
                   )
                 ],
               ),
-              child: AnimatedSwitcher(
+              child: _collapse
+                  ? null
+                  : AnimatedSwitcher(
                 duration: const Duration(milliseconds: 500),
                 child: _buildStage(),
               ),
@@ -171,7 +197,6 @@ class _OperatorBriefingState extends State<OperatorBriefing>
   }
 
   Widget _buildStage() {
-
     switch (stage) {
 
       case BriefingStage.boot:
@@ -204,8 +229,8 @@ class _OperatorBriefingState extends State<OperatorBriefing>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildTarget(showRebel, true),
-                _buildTarget(false, false),
+                _buildTarget(showRebel),
+                _buildTarget(false),
               ],
             ),
 
@@ -235,47 +260,59 @@ class _OperatorBriefingState extends State<OperatorBriefing>
             letterSpacing: 1.3,
           ),
         );
+
       case BriefingStage.ready:
         return Column(
           key: const ValueKey("ready"),
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "AUTHORIZATION GRANTED.",
-              style: TextStyle(
-                color: Colors.greenAccent,
-                letterSpacing: 3,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
 
-            const SizedBox(height: 30),
-
-            OutlinedButton(
-              onPressed: widget.onStart,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.greenAccent),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 14,
+            if (!_connecting) ...[
+              const Text(
+                "AUTHORIZATION GRANTED.",
+                style: TextStyle(
+                  color: Colors.greenAccent,
+                  letterSpacing: 3,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text(
-                "BEGIN MONITORING${'.' * _dotCount}",
-                style: const TextStyle(
+
+              const SizedBox(height: 30),
+
+              OutlinedButton(
+                onPressed: _startConnection,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.greenAccent),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                ),
+                child: Text(
+                  "BEGIN MONITORING${'.' * _dotCount}",
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    letterSpacing: 2,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+
+            if (_connecting)
+              const Text(
+                "LIVE FEED CONNECTING...",
+                style: TextStyle(
                   color: Colors.greenAccent,
                   letterSpacing: 2,
-                  fontSize: 14,
                 ),
               ),
-            ),
           ],
         );
-
     }
   }
 
-  Widget _buildTarget(bool rebel, bool isLeft) {
+  Widget _buildTarget(bool rebel) {
     return GestureDetector(
       onTap: () => _handleTap(rebel),
       child: AnimatedContainer(
@@ -293,8 +330,7 @@ class _OperatorBriefingState extends State<OperatorBriefing>
           boxShadow: rebel
               ? [
             BoxShadow(
-              color:
-              Colors.redAccent.withOpacity(0.4),
+              color: Colors.redAccent.withOpacity(0.4),
               blurRadius: 15,
             )
           ]

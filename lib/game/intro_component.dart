@@ -2,10 +2,13 @@ import 'package:big_brother_game/game/big_brother_game..dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/events.dart';
-
+import 'package:flutter_soloud/flutter_soloud.dart';
 
 class IntroComponent extends PositionComponent
     with TapCallbacks, HasGameReference<BigBrotherGame> {
+
+  AudioSource? introMusic;
+  SoundHandle? introHandle;
 
   @override
   Future<void> onLoad() async {
@@ -25,10 +28,28 @@ class IntroComponent extends PositionComponent
     );
 
     add(text);
+
+    // Initialize SoLoud and play the audio
+    // try {
+    //   if (!SoLoud.instance.isInitialized) {
+    //     await SoLoud.instance.init();
+    //   }
+    //   introMusic = await SoLoud.instance.loadAsset('assets/audio/mainentryscreen.mp3');
+    //   if (introMusic != null) {
+    //     introHandle = await SoLoud.instance.play(introMusic!, looping: true);
+    //   }
+    // } catch (e) {
+    //   debugPrint("Could not load intro music: $e");
+    // }
   }
 
   @override
   void onTapDown(TapDownEvent event) {
+    // if (introHandle != null) {
+    //   try {
+    //     SoLoud.instance.stop(introHandle!);
+    //   } catch (_) {}
+    // }
     removeFromParent();
     game.startGame();
   }
