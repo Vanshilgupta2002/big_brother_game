@@ -248,7 +248,7 @@ class BigBrotherGame extends FlameGame {
           secondPriority);
     }
   }
-  void increaseScore({int amount = 1}) {
+  Future<void> increaseScore({int amount = 1}) async {
     if (isGameOver) return;
 
     score += amount;
@@ -261,6 +261,13 @@ class BigBrotherGame extends FlameGame {
 
     if (remainingThreats <= 0) {
       isGameOver = true;
+
+      // 🔊 Stop background loop
+      if (scanHandle != null) {
+        await SoLoud.instance.stop(scanHandle!);
+        scanHandle = null;
+      }
+
       add(VictoryComponent(this));
       return;
     }
@@ -346,6 +353,10 @@ class BigBrotherGame extends FlameGame {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
+
+    if (isGameOver) {
+      return; // Stop drawing danger overlays
+    }
 
     final Rect screenRect = Rect.fromLTWH(
       contentPadding,

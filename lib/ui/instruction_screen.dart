@@ -67,7 +67,7 @@ class _IdentificationProtocolState
               animation: _glow,
               builder: (_, __) {
                 return Container(
-                  width: 720,
+                  width: 800,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
                     color: const Color(0xFF111111),
@@ -104,19 +104,36 @@ class _IdentificationProtocolState
                         MainAxisAlignment.spaceEvenly,
                         children: const [
 
-                          _SignaturePanel(
-                            color: Colors.redAccent,
-                            title: "HOSTILE SIGNATURE",
-                            description:
-                            "Neutralize Immediately",
+                          Expanded(
+                            child: _SignaturePanel(
+                              color: Colors.redAccent,
+                              title: "HOSTILE SIGNATURE",
+                              description:
+                              "Neutralize Immediately",
+                            ),
                           ),
 
-                          _SignaturePanel(
-                            color: Colors.greenAccent,
-                            title: "CIVILIAN SIGNATURE",
-                            description:
-                            "Do NOT Engage",
+                          SizedBox(width: 12),
+
+                          Expanded(
+                            child: _SignaturePanel(
+                              color: Colors.greenAccent,
+                              title: "CIVILIAN SIGNATURE",
+                              description:
+                              "Do NOT Engage",
+                            ),
                           ),
+
+                          SizedBox(width: 12),
+
+                          Expanded(
+                            child: _SignaturePanel(
+                              color: Colors.amber,
+                              title: "PRIORITY TARGET",
+                              description: "+1 Stability\nEliminates 2 Threats",
+                            ),
+                          ),
+
                         ],
                       ),
 
@@ -165,7 +182,7 @@ class _SignaturePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 250,
+      height: 220,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         border: Border.all(color: color.withOpacity(0.7)),
