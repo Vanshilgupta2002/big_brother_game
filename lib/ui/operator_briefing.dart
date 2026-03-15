@@ -40,6 +40,7 @@ class _OperatorBriefingState extends State<OperatorBriefing>
 
   AudioSource? _briefingAudio;
   SoundHandle? _briefingHandle;
+  AudioSource? _clickSound;
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _OperatorBriefingState extends State<OperatorBriefing>
   Future<void> _initAudioAndType() async {
     try {
       _briefingAudio = await SoLoud.instance.loadAsset('assets/audio/briefing.mp3');
+      _clickSound = await SoLoud.instance.loadAsset('assets/audio/click.mp3');
     } catch (e) {
       debugPrint("Failed to load briefing audio: $e");
     }
@@ -108,26 +110,43 @@ class _OperatorBriefingState extends State<OperatorBriefing>
 
   void _handleTap(bool tappedRebel) async {
     if (tapped) return;
-    tapped = true;
 
-    if (tappedRebel) {
-      message = "RESPONSE ACCEPTABLE.";
-    } else {
-      message = "ERROR: CIVILIAN ENGAGEMENT.\nPERFORMANCE FLAGGED.";
+    if (_clickSound != null) {
+      SoLoud.instance.play(_clickSound!);
     }
 
-    setState(() {});
+    if (tappedRebel) {
+      tapped = true;
+      message = "RESPONSE ACCEPTABLE.";
+      setState(() {});
 
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => stage = BriefingStage.warning);
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      setState(() => stage = BriefingStage.warning);
 
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
-    setState(() => stage = BriefingStage.ready);
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      setState(() => stage = BriefingStage.ready);
+    } else {
+      // Wrong target selected
+      setState(() {
+        message = "ERROR: CIVILIAN ENGAGEMENT.\nIDENTIFY HOSTILE.";
+      });
+
+      // Show error briefly then clear to allow retry
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      setState(() {
+        message = "";
+      });
+    }
   }
 
   void _startConnection() async {
+    if (_clickSound != null) {
+      SoLoud.instance.play(_clickSound!);
+    }
+    
     setState(() {
       _connecting = true;
     });
@@ -269,8 +288,10 @@ class _OperatorBriefingState extends State<OperatorBriefing>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.redAccent,
+              style: TextStyle(
+                color: message == "RESPONSE ACCEPTABLE."
+                    ? Colors.greenAccent
+                    : Colors.redAccent,
                 letterSpacing: 1.5,
               ),
             )

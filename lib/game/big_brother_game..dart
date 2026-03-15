@@ -4,6 +4,7 @@ import 'package:big_brother_game/game/hud_component.dart';
 import 'package:big_brother_game/game/threat_progress_bar.dart';
 import 'package:big_brother_game/game/victory_component.dart';
 import 'package:big_brother_game/game/game_over_component.dart';
+import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/components.dart';
@@ -11,7 +12,7 @@ import 'package:flutter_soloud/flutter_soloud.dart';
 import 'cctv_tile.dart';
 import 'person_component.dart';
 
-class BigBrotherGame extends FlameGame {
+class BigBrotherGame extends FlameGame with TapCallbacks {
   final int gridSize = 3;
   final List<CCTVTile> tiles = [];
   final Random random = Random();
@@ -298,13 +299,20 @@ class BigBrotherGame extends FlameGame {
     playClickSound();
   }
 
-  void useAuthority() {
+  Future<void> useAuthority() async {
     if (isGameOver) return;
 
     remainingAuthority--;
 
     if (remainingAuthority <= 0) {
       isGameOver = true;
+
+      // 🔊 Stop background sound on authority loss
+      if (scanHandle != null) {
+        await SoLoud.instance.stop(scanHandle!);
+        scanHandle = null;
+      }
+
       add(GameOverComponent(this));
     }
   }
@@ -350,6 +358,13 @@ class BigBrotherGame extends FlameGame {
       );
     }
   }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    if (!isGameStarted || isGameOver) return;
+    useAuthority();
+  }
+
   @override
   void render(Canvas canvas) {
     super.render(canvas);

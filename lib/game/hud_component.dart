@@ -11,7 +11,7 @@ class HudComponent extends TextComponent {
       : super(
     position: Vector2(
       gameRef.contentPadding + 12,
-      gameRef.contentPadding + 28,
+      gameRef.contentPadding + 42,
     ),
     textRenderer: TextPaint(
       style: const TextStyle(

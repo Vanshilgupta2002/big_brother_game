@@ -157,6 +157,29 @@ class VictoryComponent extends PositionComponent
 
     add(_reinitialize);
 
+    // ===== Button Background =====
+    final buttonBg = RectangleComponent(
+      size: Vector2(340, 55),
+      position: center + Vector2(0, 140),
+      anchor: Anchor.center,
+      paint: Paint()
+        ..color = Colors.greenAccent.withOpacity(0.08),
+    );
+
+    add(buttonBg);
+
+    add(
+      RectangleComponent(
+        size: Vector2(340, 55),
+        position: center + Vector2(0, 140),
+        anchor: Anchor.center,
+        paint: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = Colors.greenAccent.withOpacity(0.6),
+      ),
+    );
+
     // Staged reveal
     Future.delayed(const Duration(seconds: 1), () {
       _showRating = true;
@@ -227,8 +250,18 @@ class VictoryComponent extends PositionComponent
 
   @override
   void onTapDown(TapDownEvent event) {
-    game.playClickSound();
-    game.resetGame();
-    removeFromParent();
+    // 🕹️ Only restart if the player taps the button area
+    final center = size / 2;
+    final buttonRect = Rect.fromCenter(
+      center: (center + Vector2(0, 140)).toOffset(),
+      width: 340,
+      height: 55,
+    );
+
+    if (buttonRect.contains(event.localPosition.toOffset())) {
+      game.playClickSound();
+      game.resetGame();
+      removeFromParent();
+    }
   }
 }

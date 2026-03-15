@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 
 class IdentificationProtocol extends StatefulWidget {
   final VoidCallback onContinue;
@@ -18,6 +19,7 @@ class _IdentificationProtocolState
   late AnimationController _glowController;
   late Animation<double> _glow;
   bool _cursor = true;
+  AudioSource? _clickSound;
 
   @override
   void initState() {
@@ -33,12 +35,29 @@ class _IdentificationProtocolState
       if (!mounted) return;
       setState(() => _cursor = !_cursor);
     });
+
+    _loadAudio();
+  }
+
+  Future<void> _loadAudio() async {
+    try {
+      _clickSound = await SoLoud.instance.loadAsset('assets/audio/click.mp3');
+    } catch (e) {
+      debugPrint("Failed to load click sound in IdentificationProtocol: $e");
+    }
   }
 
   @override
   void dispose() {
     _glowController.dispose();
     super.dispose();
+  }
+
+  void _handleContinue() {
+    if (_clickSound != null) {
+      SoLoud.instance.play(_clickSound!);
+    }
+    widget.onContinue();
   }
 
   @override
@@ -142,7 +161,7 @@ class _IdentificationProtocolState
                       FadeTransition(
                         opacity: _glow,
                         child: OutlinedButton(
-                          onPressed: widget.onContinue,
+                          onPressed: _handleContinue,
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(
                                 color: Colors.greenAccent),
