@@ -227,6 +227,7 @@ class GameOverComponent extends PositionComponent
 
   @override
   void onTapDown(TapDownEvent event) {
+    game.playClickSound();
     game.resetGame();
     removeFromParent();
   }

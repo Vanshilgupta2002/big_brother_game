@@ -272,7 +272,7 @@ class BigBrotherGame extends FlameGame {
       return;
     }
 
-    _playClickSound();
+    playClickSound();
   }
   Future<void> loseLife() async {
     if (isGameOver) return;
@@ -295,7 +295,7 @@ class BigBrotherGame extends FlameGame {
       add(GameOverComponent(this));
     }
 
-    _playClickSound();
+    playClickSound();
   }
 
   void useAuthority() {
@@ -309,7 +309,7 @@ class BigBrotherGame extends FlameGame {
     }
   }
 
-  void _playClickSound() {
+  void playClickSound() {
     if (clickSound != null) {
       SoLoud.instance.play(clickSound!).ignore();
     }
